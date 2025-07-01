@@ -1,0 +1,462 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoria de Visita Comercial</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .info-field {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-left: 5px solid #3498db;
+            border-radius: 4px;
+        }
+        .info-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .info-field input[type="text"],
+        .info-field input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .audit-item {
+            background: #e9ecef;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .audit-item label {
+            flex-grow: 1;
+            margin-right: 20px;
+            cursor: default;
+            font-size: 1em;
+        }
+        .radio-options {
+            display: flex;
+            gap: 15px;
+            white-space: nowrap;
+        }
+        .radio-options input[type="radio"] {
+            margin-right: 5px;
+            min-width: 18px;
+            min-height: 18px;
+        }
+        .radio-options label {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        /* Estilos para campos de imagem e texto obrigatórios */
+        .required-media-field,
+        .required-text-field {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .required-media-field label,
+        .required-text-field label {
+            font-weight: normal; /* Para não competir com o label da pergunta principal */
+            margin-bottom: 5px;
+            display: block;
+        }
+        .required-media-field input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .required-text-field textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            min-height: 80px; /* Altura mínima para o campo de texto */
+            resize: vertical; /* Permite redimensionar verticalmente */
+        }
+
+        .submit-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 30px;
+        }
+        .submit-button:hover {
+            background-color: #218838;
+        }
+
+        /* --- Media Queries para Responsividade --- */
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            h2 {
+                font-size: 1.3em;
+            }
+            .audit-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px;
+            }
+            .audit-item label {
+                margin-bottom: 10px;
+                margin-right: 0;
+                font-size: 0.95em;
+            }
+            .radio-options {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 25px;
+            }
+            .required-media-field,
+            .required-text-field {
+                margin-top: 15px; /* Mais espaço em telas menores */
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            h2 {
+                font-size: 1.2em;
+            }
+            .info-field label,
+            .audit-item label {
+                font-size: 0.9em;
+            }
+            .radio-options label {
+                font-size: 0.85em;
+            }
+            .submit-button {
+                font-size: 1em;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Auditoria de Visita Comercial</h1>
+
+        <div class="info-field">
+            <label for="supervisorName">Supervisor Comercial:</label>
+            <input type="text" id="supervisorName" name="supervisorName" placeholder="Nome do Supervisor" required>
+        </div>
+        <div class="info-field">
+            <label for="salespersonName">Nome do Vendedor:</label>
+            <input type="text" id="salespersonName" name="salespersonName" placeholder="Nome do Vendedor" required>
+        </div>
+        <div class="info-field">
+            <label for="clientCnpj">CNPJ do Cliente:</label>
+            <input type="text" id="clientCnpj" name="clientCnpj" placeholder="00.000.000/0000-00" required>
+        </div>
+        <div class="info-field">
+            <label for="clientName">Nome do Cliente:</label>
+            <input type="text" id="clientName" name="clientName" placeholder="Nome do Cliente (preenchimento automático via JS)" readonly>
+        </div>
+        <div class="info-field">
+            <label for="visitDate">Data da Visita:</label>
+            <input type="date" id="visitDate" name="visitDate" required>
+        </div>
+
+        <form id="auditForm">
+            <section>
+                <h2>1. Pré Visita</h2>
+                <ul>
+                    <li class="audit-item">
+                        <label>1.1 O vendedor verificou o histórico de compras e financeiro?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="preVisit_1_1_sim" name="preVisit_1_1" value="sim" required>
+                            <label for="preVisit_1_1_sim">Sim</label>
+                            <input type="radio" id="preVisit_1_1_nao" name="preVisit_1_1" value="nao">
+                            <label for="preVisit_1_1_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>1.2 O vendedor possui mais de uma estratégia para apresentar ao cliente?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="preVisit_1_2_sim" name="preVisit_1_2" value="sim" required>
+                            <label for="preVisit_1_2_sim">Sim</label>
+                            <input type="radio" id="preVisit_1_2_nao" name="preVisit_1_2" value="nao">
+                            <label for="preVisit_1_2_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>1.3 O vendedor verificou as oportunidades através dos acompanhamentos dentro da loja?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="preVisit_1_3_sim" name="preVisit_1_3" value="sim" required>
+                            <label for="preVisit_1_3_sim">Sim</label>
+                            <input type="radio" id="preVisit_1_3_nao" name="preVisit_1_3" value="nao">
+                            <label for="preVisit_1_3_nao">Não</label>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>2. Leitura de Loja</h2>
+                <ul>
+                    <li class="audit-item">
+                        <label>2.1 O vendedor analisou a loja?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="storeReading_2_1_sim" name="storeReading_2_1" value="sim" required>
+                            <label for="storeReading_2_1_sim">Sim</label>
+                            <input type="radio" id="storeReading_2_1_nao" name="storeReading_2_1" value="nao">
+                            <label for="storeReading_2_1_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>2.2 O vendedor verificou a área de venda?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="storeReading_2_2_sim" name="storeReading_2_2" value="sim" required>
+                            <label for="storeReading_2_2_sim">Sim</label>
+                            <input type="radio" id="storeReading_2_2_nao" name="storeReading_2_2" value="nao">
+                            <label for="storeReading_2_2_nao">Não</label>
+                        </div>
+                        <div class="required-media-field">
+                            <label for="storeReading_2_2_img">Anexar imagem (Obrigatório)</label>
+                            <input type="file" id="storeReading_2_2_img" name="storeReading_2_2_img" accept="image/*" required>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>2.3 O vendedor verificou se os produtos estão disponíveis, precificados e de fácil acesso?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="storeReading_2_3_sim" name="storeReading_2_3" value="sim" required>
+                            <label for="storeReading_2_3_sim">Sim</label>
+                            <input type="radio" id="storeReading_2_3_nao" name="storeReading_2_3" value="nao">
+                            <label for="storeReading_2_3_nao">Não</label>
+                        </div>
+                        <div class="required-media-field">
+                            <label for="storeReading_2_3_img">Anexar imagem (Obrigatório)</label>
+                            <input type="file" id="storeReading_2_3_img" name="storeReading_2_3_img" accept="image/*" required>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>2.4 O vendedor caminhou pela loja e verificou oportunidades de melhoria?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="storeReading_2_4_sim" name="storeReading_2_4" value="sim" required>
+                            <label for="storeReading_2_4_sim">Sim</label>
+                            <input type="radio" id="storeReading_2_4_nao" name="storeReading_2_4" value="nao">
+                            <label for="storeReading_2_4_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>2.5 O vendedor apresentou algum estudo ou comentário com análise sobre o cliente?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="storeReading_2_5_sim" name="storeReading_2_5" value="sim" required>
+                            <label for="storeReading_2_5_sim">Sim</label>
+                            <input type="radio" id="storeReading_2_5_nao" name="storeReading_2_5" value="nao">
+                            <label for="storeReading_2_5_nao">Não</label>
+                        </div>
+                        <div class="required-text-field">
+                            <label for="storeReading_2_5_text">Detalhe o estudo/comentário (Obrigatório)</label>
+                            <textarea id="storeReading_2_5_text" name="storeReading_2_5_text" placeholder="Descreva o estudo ou comentário do vendedor..." required></textarea>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>3. Execução</h2>
+                <ul>
+                    <li class="audit-item">
+                        <label>3.1 O vendedor fez o abastecimento da loja?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="execution_3_1_sim" name="execution_3_1" value="sim" required>
+                            <label for="execution_3_1_sim">Sim</label>
+                            <input type="radio" id="execution_3_1_nao" name="execution_3_1" value="nao">
+                            <label for="execution_3_1_nao">Não</label>
+                        </div>
+                        <div class="required-media-field">
+                            <label for="execution_3_1_img">Anexar imagem (Obrigatório)</label>
+                            <input type="file" id="execution_3_1_img" name="execution_3_1_img" accept="image/*" required>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>3.2 O vendedor identificou ou conseguiu espaço na área de vendas?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="execution_3_2_sim" name="execution_3_2" value="sim" required>
+                            <label for="execution_3_2_sim">Sim</label>
+                            <input type="radio" id="execution_3_2_nao" name="execution_3_2" value="nao">
+                            <label for="execution_3_2_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>3.3 O vendedor realizou a limpeza dos produtos na área de venda?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="execution_3_3_sim" name="execution_3_3" value="sim" required>
+                            <label for="execution_3_3_sim">Sim</label>
+                            <input type="radio" id="execution_3_3_nao" name="execution_3_3" value="nao">
+                            <label for="execution_3_3_nao">Não</label>
+                        </div>
+                        <div class="required-media-field">
+                            <label for="execution_3_3_img">Anexar imagem (Obrigatório)</label>
+                            <input type="file" id="execution_3_3_img" name="execution_3_3_img" accept="image/*" required>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>3.4 O vendedor reabasteceu a gôndola no layout correto?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="execution_3_4_sim" name="execution_3_4" value="sim" required>
+                            <label for="execution_3_4_sim">Sim</label>
+                            <input type="radio" id="execution_3_4_nao" name="execution_3_4" value="nao">
+                            <label for="execution_3_4_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>3.5 O vendedor verificou a validade dos produtos?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="execution_3_5_sim" name="execution_3_5" value="sim" required>
+                            <label for="execution_3_5_sim">Sim</label>
+                            <input type="radio" id="execution_3_5_nao" name="execution_3_5" value="nao">
+                            <label for="execution_3_5_nao">Não</label>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>4. Negociação</h2>
+                <ul>
+                    <li class="audit-item">
+                        <label>4.1 O vendedor apresentou os problemas que foram solucionados dentro da loja?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="negotiation_4_1_sim" name="negotiation_4_1" value="sim" required>
+                            <label for="negotiation_4_1_sim">Sim</label>
+                            <input type="radio" id="negotiation_4_1_nao" name="negotiation_4_1" value="nao">
+                            <label for="negotiation_4_1_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>4.2 O vendedor apresentou para o cliente o levantamento de estoque?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="negotiation_4_2_sim" name="negotiation_4_2" value="sim" required>
+                            <label for="negotiation_4_2_sim">Sim</label>
+                            <input type="radio" id="negotiation_4_2_nao" name="negotiation_4_2" value="nao">
+                            <label for="negotiation_4_2_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>4.3 O vendedor argumentou sobre o levantamento de estoque?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="negotiation_4_3_sim" name="negotiation_4_3" value="sim" required>
+                            <label for="negotiation_4_3_sim">Sim</label>
+                            <input type="radio" id="negotiation_4_3_nao" name="negotiation_4_3" value="nao">
+                            <label for="negotiation_4_3_nao">Não</label>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>5. Fechamento da Visita</h2>
+                <ul>
+                    <li class="audit-item">
+                        <label>5.1 O vendedor apresentou ao cliente o valor do pedido?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="closing_5_1_sim" name="closing_5_1" value="sim" required>
+                            <label for="closing_5_1_sim">Sim</label>
+                            <input type="radio" id="closing_5_1_nao" name="closing_5_1" value="nao">
+                            <label for="closing_5_1_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>5.2 O vendedor apresentou ao cliente o prazo combinado?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="closing_5_2_sim" name="closing_5_2" value="sim" required>
+                            <label for="closing_5_2_sim">Sim</label>
+                            <input type="radio" id="closing_5_2_nao" name="closing_5_2" value="nao">
+                            <label for="closing_5_2_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>5.3 O vendedor apresentou a previsão de entrega?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="closing_5_3_sim" name="closing_5_3" value="sim" required>
+                            <label for="closing_5_3_sim">Sim</label>
+                            <input type="radio" id="closing_5_3_nao" name="closing_5_3" value="nao">
+                            <label for="closing_5_3_nao">Não</label>
+                        </div>
+                    </li>
+                    <li class="audit-item">
+                        <label>5.4 O vendedor informou ao cliente o retorno da próxima visita?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="closing_5_4_sim" name="closing_5_4" value="sim" required>
+                            <label for="closing_5_4_sim">Sim</label>
+                            <input type="radio" id="closing_5_4_nao" name="closing_5_4" value="nao">
+                            <label for="closing_5_4_nao">Não</label>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <button type="submit" class="submit-button">Finalizar Auditoria</button>
+        </form>
+    </div>
+</body>
+</html>
