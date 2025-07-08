@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -58,7 +57,6 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
-
         .audit-item {
             background: #e9ecef;
             margin-bottom: 10px;
@@ -89,7 +87,6 @@
             margin: 0;
             font-weight: normal;
         }
-
         /* Estilos para campos de imagem e texto obrigatórios */
         .required-media-field,
         .required-text-field {
@@ -118,7 +115,6 @@
             min-height: 80px; /* Altura mínima para o campo de texto */
             resize: vertical; /* Permite redimensionar verticalmente */
         }
-
         .submit-button {
             display: block;
             width: 100%;
@@ -135,9 +131,7 @@
         .submit-button:hover {
             background-color: #218838;
         }
-
         /* --- Media Queries para Responsividade --- */
-
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -169,7 +163,6 @@
                 margin-top: 15px; /* Mais espaço em telas menores */
             }
         }
-
         @media (max-width: 480px) {
             body {
                 padding: 10px;
@@ -316,7 +309,15 @@
                         <div class="required-text-field">
                             <label for="storeReading_2_5_text">Detalhe o estudo/comentário (Obrigatório)</label>
                             <textarea id="storeReading_2_5_text" name="storeReading_2_5_text" placeholder="Descreva o estudo ou comentário do vendedor..." required></textarea>
-                        </div>
+
+                            <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
+                                <label>Ou grave uma descrição:</label>
+                                <button type="button" id="recordAudioButton" style="padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Gravar Áudio</button>
+                                <audio id="audioPlayback" controls style="display: none; width: 100%; margin-top: 10px;"></audio>
+                                <input type="hidden" id="audioData" name="storeReading_2_5_audio">
+                                <span id="recordingStatus" style="margin-left: 10px; color: #555;"></span>
+                            </div>
+                            </div>
                     </li>
                 </ul>
             </section>
@@ -458,5 +459,112 @@
             <button type="submit" class="submit-button">Finalizar Auditoria</button>
         </form>
     </div>
+
+    <script>
+        const recordAudioButton = document.getElementById('recordAudioButton');
+        const audioPlayback = document.getElementById('audioPlayback');
+        const audioDataInput = document.getElementById('audioData');
+        const recordingStatus = document.getElementById('recordingStatus');
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        recordAudioButton.addEventListener('click', async () => {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // Você pode usar 'audio/webm' para um formato mais compatível com a web e menor
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        audioPlayback.src = audioUrl;
+                        audioPlayback.style.display = 'block';
+
+                        // Para enviar o áudio ao servidor, é melhor usar FormData no evento de submit do formulário
+                        // ou converter o Blob para Base64 se for um formulário simples sem upload de arquivos
+                        // Por enquanto, o input hidden apenas guarda o URL temporário para fins de demonstração
+                        audioDataInput.value = audioUrl; // Guarda o URL temporário para o áudio no navegador
+
+                        stream.getTracks().forEach(track => track.stop()); // Parar o microfone
+                        recordingStatus.textContent = 'Áudio gravado! Ouça abaixo.';
+                    };
+
+                    mediaRecorder.start();
+                    recordAudioButton.textContent = 'Parar Gravação';
+                    recordingStatus.textContent = 'Gravando... (Clique novamente para parar)';
+                    audioPlayback.style.display = 'none'; // Esconder o player durante a gravação
+                    audioDataInput.value = ''; // Limpar dados de áudio anteriores
+                    isRecording = true;
+
+                } catch (err) {
+                    console.error('Erro ao acessar o microfone:', err);
+                    recordingStatus.textContent = 'Erro: Verifique a permissão do microfone.';
+                    recordAudioButton.textContent = 'Gravar Áudio'; // Reset button text on error
+                    isRecording = false;
+                }
+            } else {
+                mediaRecorder.stop();
+                recordAudioButton.textContent = 'Gravar Áudio';
+                isRecording = false;
+            }
+        });
+
+        // Exemplo de como você enviaria o áudio Blob com o formulário usando FormData
+        // Isso é o que você precisaria no lado do servidor para receber o arquivo de áudio.
+        document.getElementById('auditForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Impede o envio padrão do formulário
+
+            const formData = new FormData(this); // Cria um objeto FormData com todos os campos do formulário
+
+            // Se houver áudio gravado, adicione-o ao FormData
+            if (audioChunks.length > 0 && audioDataInput.value) { // Verifica se há chunks e se o URL temporário foi gerado
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // Use o mesmo tipo de quando criou o Blob
+                formData.append('storeReading_2_5_audio_file', audioBlob, 'descricao_audio.wav'); // 'descricao_audio.wav' é o nome do arquivo que o servidor receberá
+            }
+
+            // Exemplo de envio usando Fetch API para um endpoint no servidor
+            // Substitua '/seu-endpoint-de-envio' pelo URL real do seu servidor
+            console.log('Dados do formulário sendo enviados:', Array.from(formData.entries()));
+
+            // ATENÇÃO: A linha abaixo é um exemplo de como enviar para o servidor.
+            // Você precisará de um backend (Node.js, PHP, Python, etc.) para processar esses dados.
+            /*
+            try {
+                const response = await fetch('/seu-endpoint-de-envio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Sucesso ao enviar o formulário:', result);
+                    alert('Auditoria finalizada com sucesso!');
+                    // Opcional: Redirecionar ou limpar o formulário
+                    this.reset();
+                    audioPlayback.style.display = 'none';
+                    audioDataInput.value = '';
+                    recordingStatus.textContent = '';
+                } else {
+                    console.error('Erro no servidor ao enviar o formulário:', response.statusText);
+                    alert('Houve um erro ao finalizar a auditoria. Tente novamente.');
+                }
+            } catch (error) {
+                console.error('Erro de rede ou ao processar:', error);
+                alert('Ocorreu um erro inesperado. Verifique sua conexão e tente novamente.');
+            }
+            */
+
+            // Para fins de demonstração no navegador (sem backend):
+            alert('Formulário (e áudio, se gravado) pronto para envio! Veja os dados no console do navegador.');
+            console.log('Simulando envio. Verifique a aba Network do seu navegador para como seria o POST.');
+        });
+    </script>
 </body>
 </html>
