@@ -311,11 +311,13 @@
                             <textarea id="storeReading_2_5_text" name="storeReading_2_5_text" placeholder="Descreva o estudo ou comentário do vendedor..." required></textarea>
 
                             <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
-                                <label>Ou grave uma descrição:</label>
-                                <button type="button" id="recordAudioButton" style="padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Gravar Áudio</button>
-                                <audio id="audioPlayback" controls style="display: none; width: 100%; margin-top: 10px;"></audio>
-                                <input type="hidden" id="audioData" name="storeReading_2_5_audio">
-                                <span id="recordingStatus" style="margin-left: 10px; color: #555;"></span>
+                                <label>Ou transcreva sua fala para texto:</label>
+                                <button type="button" id="startTranscriptionButton" style="padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Iniciar Transcrição</button>
+                                <span id="transcriptionStatus" style="margin-left: 10px; color: #555;"></span>
+                                <div style="margin-top: 10px;">
+                                    <label>Texto Transcrito (preenche o campo acima):</label>
+                                    <span id="liveTranscribedText" style="display: block; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background-color: #f9f9f9; min-height: 40px;">Clique em "Iniciar Transcrição" e comece a falar.</span>
+                                </div>
                             </div>
                             </div>
                     </li>
@@ -461,81 +463,87 @@
     </div>
 
     <script>
-        const recordAudioButton = document.getElementById('recordAudioButton');
-        const audioPlayback = document.getElementById('audioPlayback');
-        const audioDataInput = document.getElementById('audioData');
-        const recordingStatus = document.getElementById('recordingStatus');
+        const startTranscriptionButton = document.getElementById('startTranscriptionButton');
+        const transcriptionStatus = document.getElementById('transcriptionStatus');
+        const liveTranscribedText = document.getElementById('liveTranscribedText');
+        const storeReadingTextarea = document.getElementById('storeReading_2_5_text');
 
-        let mediaRecorder;
-        let audioChunks = [];
-        let isRecording = false;
+        let isTranscribing = false;
 
-        recordAudioButton.addEventListener('click', async () => {
-            if (!isRecording) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
+        // Verifica se a Web Speech API é suportada
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false; // Reconhece uma frase e para. Mude para true para transcrição contínua.
+            recognition.interimResults = true; // Permite ver resultados provisórios enquanto o usuário fala
+            recognition.lang = 'pt-BR'; // Define o idioma para Português do Brasil
 
-                    mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // Você pode usar 'audio/webm' para um formato mais compatível com a web e menor
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        audioPlayback.src = audioUrl;
-                        audioPlayback.style.display = 'block';
+            recognition.onstart = () => {
+                isTranscribing = true;
+                startTranscriptionButton.textContent = 'Parar Transcrição';
+                transcriptionStatus.textContent = 'Ouvindo... Por favor, fale.';
+                liveTranscribedText.textContent = ''; // Limpa o texto exibido
+                storeReadingTextarea.value = ''; // Limpa o textarea principal
+            };
 
-                        // Para enviar o áudio ao servidor, é melhor usar FormData no evento de submit do formulário
-                        // ou converter o Blob para Base64 se for um formulário simples sem upload de arquivos
-                        // Por enquanto, o input hidden apenas guarda o URL temporário para fins de demonstração
-                        audioDataInput.value = audioUrl; // Guarda o URL temporário para o áudio no navegador
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
 
-                        stream.getTracks().forEach(track => track.stop()); // Parar o microfone
-                        recordingStatus.textContent = 'Áudio gravado! Ouça abaixo.';
-                    };
-
-                    mediaRecorder.start();
-                    recordAudioButton.textContent = 'Parar Gravação';
-                    recordingStatus.textContent = 'Gravando... (Clique novamente para parar)';
-                    audioPlayback.style.display = 'none'; // Esconder o player durante a gravação
-                    audioDataInput.value = ''; // Limpar dados de áudio anteriores
-                    isRecording = true;
-
-                } catch (err) {
-                    console.error('Erro ao acessar o microfone:', err);
-                    recordingStatus.textContent = 'Erro: Verifique a permissão do microfone.';
-                    recordAudioButton.textContent = 'Gravar Áudio'; // Reset button text on error
-                    isRecording = false;
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
                 }
-            } else {
-                mediaRecorder.stop();
-                recordAudioButton.textContent = 'Gravar Áudio';
-                isRecording = false;
-            }
-        });
+                liveTranscribedText.textContent = finalTranscript + interimTranscript;
+                storeReadingTextarea.value = finalTranscript; // Apenas o resultado final vai para o textarea
+            };
 
-        // Exemplo de como você enviaria o áudio Blob com o formulário usando FormData
-        // Isso é o que você precisaria no lado do servidor para receber o arquivo de áudio.
+            recognition.onerror = (event) => {
+                console.error('Erro no reconhecimento de fala:', event.error);
+                transcriptionStatus.textContent = `Erro de transcrição: ${event.error}. Clique para tentar novamente.`;
+                startTranscriptionButton.textContent = 'Iniciar Transcrição';
+                isTranscribing = false;
+            };
+
+            recognition.onend = () => {
+                isTranscribing = false;
+                startTranscriptionButton.textContent = 'Iniciar Transcrição';
+                transcriptionStatus.textContent = 'Transcrição finalizada. Clique para falar novamente.';
+                // Garante que o texto final esteja no textarea
+                storeReadingTextarea.value = liveTranscribedText.textContent;
+            };
+
+            startTranscriptionButton.addEventListener('click', () => {
+                if (isTranscribing) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                }
+            });
+        } else {
+            // Caso o navegador não suporte a Web Speech API
+            console.warn('Web Speech API não é suportada neste navegador.');
+            startTranscriptionButton.style.display = 'none'; // Oculta o botão
+            transcriptionStatus.textContent = 'Seu navegador não suporta a transcrição de áudio via Web Speech API.';
+            storeReadingTextarea.placeholder = 'Digite o estudo ou comentário do vendedor... (Transcriçao indisponível)';
+        }
+
+        // Lógica de envio do formulário
         document.getElementById('auditForm').addEventListener('submit', async function(event) {
             event.preventDefault(); // Impede o envio padrão do formulário
 
-            const formData = new FormData(this); // Cria um objeto FormData com todos os campos do formulário
+            const formData = new FormData(this);
 
-            // Se houver áudio gravado, adicione-o ao FormData
-            if (audioChunks.length > 0 && audioDataInput.value) { // Verifica se há chunks e se o URL temporário foi gerado
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // Use o mesmo tipo de quando criou o Blob
-                formData.append('storeReading_2_5_audio_file', audioBlob, 'descricao_audio.wav'); // 'descricao_audio.wav' é o nome do arquivo que o servidor receberá
-            }
-
-            // Exemplo de envio usando Fetch API para um endpoint no servidor
-            // Substitua '/seu-endpoint-de-envio' pelo URL real do seu servidor
+            // O texto transcrito já estará no formData através do campo storeReading_2_5_text
             console.log('Dados do formulário sendo enviados:', Array.from(formData.entries()));
 
-            // ATENÇÃO: A linha abaixo é um exemplo de como enviar para o servidor.
-            // Você precisará de um backend (Node.js, PHP, Python, etc.) para processar esses dados.
             /*
+            // Exemplo de envio usando Fetch API para um endpoint no servidor
+            // Substitua '/seu-endpoint-de-envio' pelo URL real do seu servidor
             try {
                 const response = await fetch('/seu-endpoint-de-envio', {
                     method: 'POST',
@@ -546,11 +554,9 @@
                     const result = await response.json();
                     console.log('Sucesso ao enviar o formulário:', result);
                     alert('Auditoria finalizada com sucesso!');
-                    // Opcional: Redirecionar ou limpar o formulário
-                    this.reset();
-                    audioPlayback.style.display = 'none';
-                    audioDataInput.value = '';
-                    recordingStatus.textContent = '';
+                    this.reset(); // Limpa o formulário após o envio
+                    transcriptionStatus.textContent = '';
+                    liveTranscribedText.textContent = 'Clique em "Iniciar Transcrição" e comece a falar.';
                 } else {
                     console.error('Erro no servidor ao enviar o formulário:', response.statusText);
                     alert('Houve um erro ao finalizar a auditoria. Tente novamente.');
@@ -561,8 +567,7 @@
             }
             */
 
-            // Para fins de demonstração no navegador (sem backend):
-            alert('Formulário (e áudio, se gravado) pronto para envio! Veja os dados no console do navegador.');
+            alert('Formulário (com o texto transcrito, se usado) pronto para envio! Veja os dados no console do navegador.');
             console.log('Simulando envio. Verifique a aba Network do seu navegador para como seria o POST.');
         });
     </script>
